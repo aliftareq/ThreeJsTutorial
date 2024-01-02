@@ -580,6 +580,7 @@ var _orbitControls = require("three/examples/jsm/controls/OrbitControls");
 var _datGui = require("dat.gui");
 //renderer.
 const renderer = new _three.WebGL1Renderer();
+renderer.shadowMap.enabled = true;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 //scene & the camera 
@@ -599,26 +600,43 @@ const boxMaterial = new _three.MeshBasicMaterial({
 const box = new _three.Mesh(boxGeometry, boxMaterial);
 scene.add(box);
 const sphereGeometry = new _three.SphereGeometry(4, 50, 50);
-const sphereMaterial = new _three.MeshBasicMaterial({
+const sphereMaterial = new _three.MeshStandardMaterial({
     color: 0x0000FF,
     wireframe: false
 });
 const sphere = new _three.Mesh(sphereGeometry, sphereMaterial);
 scene.add(sphere);
 sphere.position.set(-10, 10, 0);
+sphere.castShadow = true;
 const ambientLight = new _three.AmbientLight(0x333333);
 scene.add(ambientLight);
-const directionalLight = new _three.DirectionalLight(0xFFFFFF, 0.8);
-scene.add(directionalLight);
-directionalLight.position.set(-30, 50, 0);
-const dLightHelper = new _three.DirectionalLightHelper(directionalLight);
-scene.add(dLightHelper);
+// const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.8);
+// scene.add(directionalLight)
+// directionalLight.position.set(-30, 50, 0)
+// directionalLight.castShadow = true;
+// directionalLight.shadow.camera.bottom = -12;
+// const dLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5)
+// scene.add(dLightHelper)
+// const dLightShadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+// scene.add(dLightShadowHelper)
+const spotLight = new _three.SpotLight(0xFFFFFF, 100000);
+scene.add(spotLight);
+spotLight.position.set(-100, 100, 0);
+spotLight.castShadow = true;
+spotLight.angle = 0.2;
+const spotLightHelper = new _three.SpotLightHelper(spotLight);
+scene.add(spotLightHelper);
+// scene.fog = new THREE.Fog(0xFFFFFF, 0, 200)
+scene.fog = new _three.Fog(0xFFFFFF, 0.01);
 //for changing color
 const gui = new _datGui.GUI();
 const options = {
     sphereColor: "#ffea00",
     wireframe: false,
-    speed: 0.01
+    speed: 0.01,
+    angle: 0.03,
+    penumbra: 0.5,
+    intensity: 50000
 };
 gui.addColor(options, "sphereColor").onChange(function(e) {
     sphere.material.color.set(e);
@@ -627,6 +645,9 @@ gui.add(options, "wireframe").onChange(function(e) {
     sphere.material.wireframe = e;
 });
 gui.add(options, "speed", 0, 0.1);
+gui.add(options, "angle", 0, 1);
+gui.add(options, "penumbra", 0, 1);
+gui.add(options, "intensity", 0, 100000);
 //creating a plane.
 const planeGeometry = new _three.PlaneGeometry(30, 30);
 const planeMaterial = new _three.MeshStandardMaterial({
@@ -636,6 +657,7 @@ const planeMaterial = new _three.MeshStandardMaterial({
 const plane = new _three.Mesh(planeGeometry, planeMaterial);
 scene.add(plane);
 plane.rotation.x = -0.5 * Math.PI;
+plane.receiveShadow = true;
 const gridHelper = new _three.GridHelper(30);
 scene.add(gridHelper);
 //bounching the sphere
@@ -646,6 +668,10 @@ function animate(time) {
     box.rotation.y = time / 1000;
     step += options.speed;
     sphere.position.y = 10 * Math.abs(Math.sin(step));
+    spotLight.angle = options.angle;
+    spotLight.penumbra = options.penumbra;
+    spotLight.intensity = options.intensity;
+    spotLightHelper.update();
     renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(animate);
